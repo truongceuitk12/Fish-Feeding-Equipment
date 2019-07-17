@@ -1,0 +1,410 @@
+A51 MACRO ASSEMBLER  FISH_FEEDING_EQUIPMENT                                               07/17/2019 17:06:00 PAGE     1
+
+
+MACRO ASSEMBLER A51 V8.2.7.0
+OBJECT MODULE PLACED IN .\Objects\Fish Feeding Equipment.obj
+ASSEMBLER INVOKED BY: C:\Keil_v5\C51\BIN\A51.EXE Fish Feeding Equipment.a51 SET(SMALL) DEBUG PRINT(.\Listings\Fish Feedi
+                      ng Equipment.lst) OBJECT(.\Objects\Fish Feeding Equipment.obj) EP
+
+LOC  OBJ            LINE     SOURCE
+
+                       1     
+                       2     
+0300                   3                     org     0300H
+                       4     
+  REG                  5     ti0     equ     r6
+  REG                  6     sec     equ r5
+  0011                 7     min     equ     11H
+  0012                 8     nguyen7Led      equ     12H
+  0013                 9     du7Led  equ     13H
+  0014                10     tramUart        equ     14H
+  0015                11     chucUart        equ     15H
+  0016                12     donviUart       equ     16H
+  0017                13     duUart  equ 17H
+  0019                14     save equ        19H
+  0020                15     DelayServo equ  20H
+  0021                16     DelayBT1        equ     21H
+  0022                17     DelayBT2        equ     22H
+  0023                18     DelayHThi       equ     23H
+  00B7                19     servo_out       bit     P3.7
+                      20     ;====================================================================
+                      21     ; RESET and INTERRUPT VECTORS
+                      22     ;====================================================================
+                      23     
+                      24           ; Reset Vector
+0000                  25           org   0000h
+0000 802E             26           jmp   Start
+                      27     
+0003                  28                     org     0003H
+0003 216F             29                     jmp     ISRINT0
+                      30     
+0013                  31                     org     0013H
+0013 2180             32                     jmp     ISRINT1
+                      33     
+000B                  34                     org     000BH
+000B 2191             35                     jmp     ISRTIMER0
+                      36     
+0023                  37                     org     0023h
+0023 219F             38                     jmp     ISRUART
+                      39                     
+                      40     ;====================================================================
+                      41     ; CODE SEGMENT
+                      42     ;====================================================================
+                      43     
+0030                  44           org   0030h
+0030                  45     Start:
+                      46           ; Write your code here
+                      47     
+0030 C2B6             48                     CLR     P3.6
+0032 C293             49                     CLR     P1.3
+0034 C292             50                     CLR     P1.2
+0036 75A0FF           51                     mov P2, #0FFH
+0039 7580FF           52                     mov     P0, #0FFH
+                      53     
+003C 758CD8           54                     mov   TH0,#high(-10000)
+003F 758AF0           55                     mov    TL0,#low(-10000)
+0042 758921           56                     mov     TMOD,   #00100001B
+0045 758DFD           57                     mov TH1, #0FDH
+A51 MACRO ASSEMBLER  FISH_FEEDING_EQUIPMENT                                               07/17/2019 17:06:00 PAGE     2
+
+0048 759850           58                     mov SCON,        #050H
+004B 75A897           59                     mov     IE,     #10010111B
+004E 75B815           60                     mov     IP,     #00010101B
+                      61                     
+0051 C28D             62                     CLR     TF0
+0053 D28C             63                     SETB    TR0
+0055 D28E             64                     SETB    TR1
+                      65     
+0057 7E00             66                     MOV     ti0, #00H
+0059 751905           67                     mov             save, #05H
+005C AD19             68                     MOV     sec,    save
+005E 75113C           69                     MOV     min,    #03CH
+0061 7400             70                     mov A, #00H
+0063 752064           71                     mov     DelayServo,     #100
+                      72     
+0066 C293             73                     CLR     P1.3
+0068 C290             74                     CLR     P1.0
+                      75     
+006A                  76     Loop:
+006A 11CB             77                     ACALL  Servo_2c
+                      78                     ;MI:
+006C 3120             79                                     ACALL  ReadAdc
+006E                  80                                     SE:
+006E                  81                                                     TIM0:
+006E 1200AB           82                                                     LCALL   LUU
+0071 1200B6           83                                                     LCALL    HIENTHI
+0074 BE63F7           84                                                     CJNE    ti0,    #063H,  TIM0
+0077 7E00             85                                                     mov     ti0,    #00H
+0079 B2B6             86                                     CPL     P3.6
+007B DDF1             87                                     DJNZ    sec, SE
+007D AD19             88                                     mov sec, save
+                      89     
+                      90                     ;DJNZ   min,     MI
+                      91                     ;mov min, #03BH
+                      92     
+007F 80E9             93      jmp Loop
+                      94     
+0081                  95     DELAYHT: 
+0081 752341           96                     MOV DelayHThi, #65
+0084 D523FD           97                     LoopDelay:      DJNZ    DelayHThi,      LoopDelay
+0087 22               98     RET
+                      99     
+0088                 100     DELAYBT:
+0088 7521FF          101                     MOV             DelayBT1, #255
+008B                 102     LoopDelayBT:
+008B 7522FF          103                     MOV             DelayBT2, #255
+008E D522FD          104                     DJNZ    DelayBT2, $
+0091 D521F7          105                     DJNZ    DelayBT1,LoopDelayBT
+0094 22              106                     RET
+                     107     
+0095                 108     DELAYSV:
+0095 AF20            109             MOV     R7, DelayServo
+0097                 110             DELAYSVV:
+0097 758AA0          111             MOV TL0,#LOW(-60000)
+009A 758C15          112             MOV TH0,#HIGH(-60000)
+009D D28C            113             SETB    TR0
+009F 308DFD          114             AGAIN:  JNB     TF0,    AGAIN
+00A2 C28C            115             CLR     TR0
+00A4 C28D            116             CLR     TF0
+00A6 DFEF            117             DJNZ R7,DELAYSVV
+00A8 7F00            118             MOV     R7,#0
+00AA 22              119             RET
+                     120     
+00AB                 121     LUU:
+00AB ED              122                     MOV    A, sec
+00AC 75F00A          123                     MOV    B,#10
+A51 MACRO ASSEMBLER  FISH_FEEDING_EQUIPMENT                                               07/17/2019 17:06:00 PAGE     3
+
+00AF 84              124                     DIV       AB  
+00B0 85F013          125                     MOV    du7Led,B        
+00B3 F512            126                     MOV    nguyen7Led,A 
+00B5 22              127                     ret
+                     128     
+00B6                 129     HIENTHI:
+00B6 D2B4            130                     SETB            P3.4
+00B8 851280          131                     MOV     P0, nguyen7Led
+00BB 120081          132                     lCALL   DELAYHT
+00BE C2B4            133                     CLR             P3.4
+00C0 D2B5            134                     SETB            P3.5
+00C2 851380          135                     MOV     P0, du7Led
+00C5 120081          136                     lCALL   DELAYHT
+00C8 C2B5            137                     CLR             P3.5
+00CA 22              138                     ret
+                     139     
+00CB                 140     Servo_2c:
+00CB 11F1            141                     ACALL MOVE0
+00CD 1195            142                     ACALL DELAYSV
+00CF 11E2            143                     ACALL MOVE45
+00D1 1195            144                     ACALL DELAYSV
+00D3 11F1            145                     ACALL MOVE0
+                     146     
+00D5 C2B7            147                     CLR     P3.7
+00D7 D2A9            148                     SETB    ET0
+00D9 758CD8          149                     mov   TH0,#high(-10000)
+00DC 758AF0          150                     mov    TL0,#low(-10000)
+00DF D28C            151                     SETB    TR0
+00E1 22              152                     RET
+                     153     
+00E2                 154     MOVE45:
+00E2 7F64            155             MOV R7,#100
+00E4                 156     MOVE455:
+00E4 D2B7            157             SETB servo_out
+00E6 3100            158             CALL DELAY45
+00E8 C2B7            159             CLR servo_out
+00EA 3100            160             CALL DELAY45
+00EC DFF6            161             DJNZ R7,MOVE455
+00EE 7F00            162             MOV R7,#0
+00F0 22              163             RET
+                     164     
+00F1                 165     MOVE0:
+00F1 7F64            166             MOV R7,#100
+00F3                 167     MOVE00:
+00F3 D2B7            168             SETB servo_out
+00F5 3110            169             CALL DELAY0
+00F7 C2B7            170             CLR servo_out
+00F9 3110            171             CALL DELAY0
+00FB DFF6            172             DJNZ R7,MOVE00
+00FD 7F00            173             MOV R7,#0
+00FF 22              174             RET
+                     175     
+0100                 176     DELAY45:
+0100 758A30          177             MOV TL0,#LOW(-2000)
+0103 758CF8          178             MOV TH0,#HIGH(-2000)
+0106 D28C            179             SETB TR0
+0108 308DFD          180             JNB  TF0,$
+010B C28C            181             CLR  TR0
+010D C28D            182             CLR  TF0
+010F 22              183             RET
+0110                 184     DELAY0:
+0110 758A24          185             MOV TL0,#LOW(-1500)
+0113 758CFA          186             MOV TH0,#HIGH(-1500)
+0116 D28C            187             SETB TR0
+0118 308DFD          188             JNB  TF0,$
+011B C28C            189             CLR  TR0
+A51 MACRO ASSEMBLER  FISH_FEEDING_EQUIPMENT                                               07/17/2019 17:06:00 PAGE     4
+
+011D C28D            190             CLR  TF0
+011F 22              191             RET
+                     192     
+0120                 193     ReadAdc:
+0120 D290            194                     SETB    P1.0
+0122 1181            195                     ACALL DELAYHT
+0124 C290            196                     CLR     P1.0
+0126 1181            197                     ACALL DELAYHT
+0128 3091FD          198                     LOOP1: JNB P1.1, LOOP1
+                     199     
+012B E5A0            200                     MOV A, P2
+012D 75F064          201                     MOV B, #100
+0130 84              202                     DIV     AB
+0131 F514            203                     MOV tramUart, A; 14H LUU HANG TRAM
+0133 E5F0            204                     MOV A, B
+0135 75F00A          205                     MOV B, #10
+0138 84              206                     DIV AB
+0139 F515            207                     MOV chucUart, A; 15H LUU HANG CHUC
+013B 85F016          208                     MOV donviUart, B
+                     209     
+013E 75F002          210                     MOV B, #2
+0141 E516            211                     MOV A, donviUart; 16H LUU HANG DV
+0143 A4              212                     MUL AB
+0144 75F00A          213                     MOV B, #10
+0147 84              214                     DIV AB
+0148 85F016          215                     MOV donviUart, B
+014B F517            216                     MOV duUart, A; 17 LUU SO NHO 
+014D 75F002          217                     MOV B, #2
+0150 E515            218                     MOV A, chucUart
+0152 A4              219                     MUL AB
+0153 8517F0          220                     MOV B, duUart
+0156 25F0            221                     ADD A, B
+0158 75F00A          222                     MOV B, #10
+015B 84              223                     DIV AB
+015C 85F015          224                     MOV chucUart, B
+015F F517            225                     MOV duUart, A
+0161 75F002          226                     MOV B, #2
+0164 E514            227                     MOV A, tramUart
+0166 A4              228                     MUL AB
+0167 8517F0          229                     MOV B, duUart
+016A 25F0            230                     ADD A,B
+016C F514            231                     MOV tramUart, A
+016E 22              232                     RET
+                     233     
+016F                 234     ISRINT0:
+016F 1188            235                     ACALL   DELAYBT
+0171 1188            236                     ACALL   DELAYBT
+0173 0519            237                                     INC     save
+0175 AD19            238                                     mov     sec,    save
+0177 BD3D05          239                                     CJNE    sec, #03DH, SE1
+017A 7D01            240                                                     mov     sec,    #01H
+017C 751901          241                                                     mov save, #01H
+017F                 242                                     SE1:
+017F 32              243                     RETI
+                     244     
+0180                 245     ISRINT1:
+0180 1188            246                     ACALL   DELAYBT
+0182 1188            247                     ACALL   DELAYBT
+0184 1519            248                     DEC save
+0186 AD19            249                                     mov     sec,    save
+0188 BD0005          250                                     CJNE    sec, #00H, SE2
+018B 7D3C            251                                                     mov     sec,    #03CH
+018D 75193C          252                                                     mov save, #03CH
+0190                 253                                     SE2:
+0190 32              254                     RETI
+                     255     
+A51 MACRO ASSEMBLER  FISH_FEEDING_EQUIPMENT                                               07/17/2019 17:06:00 PAGE     5
+
+0191                 256     ISRTIMER0:
+0191 C28C            257                     CLR     TR0
+0193 758CD8          258                     mov   TH0,#high(-10000)
+0196 758AF0          259                     mov    TL0,#low(-10000)
+0199 0E              260                     INC     ti0
+019A B292            261                     CPL     P1.2
+019C D28C            262                     SETB    TR0
+019E 32              263                     RETI
+                     264     
+019F                 265     ISRUART:
+019F E599            266                     MOV     A, SBUF
+01A1 C298            267                     CLR     RI
+01A3 B43116          268                     CJNE    A, #031H, KoNDo
+                     269                                     ;MOV A, tramUart
+                     270                                     ;ADD A, #030H
+                     271                                     ;MOV    SBUF,   A
+                     272                                     ;HERE1: JNB TI, HERE1
+                     273                                     ;CLR TI
+01A6 E515            274                                     MOV A, chucUart
+01A8 2430            275                                     ADD A, #030H
+01AA F599            276                                     MOV     SBUF,   A
+01AC 3099FD          277                                     HERE2: JNB TI, HERE2
+01AF C299            278                                     CLR TI
+01B1 E516            279                                     MOV A, donviUart
+01B3 2430            280                                     ADD A, #030H
+01B5 F599            281                                     MOV     SBUF,   A
+01B7 3099FD          282                                     HERE3: JNB TI, HERE3
+01BA C299            283                                     CLR TI
+01BC                 284                     KoNDo:
+01BC B4320B          285                     CJNE    A, #032H, Ko50
+01BF 752032          286                                     Mov DelayServo, #50
+01C2 75994F          287                                     MOV     SBUF,   #"O"
+01C5 3099FD          288                                     HERE4: JNB TI, HERE4
+01C8 C299            289                                     CLR TI
+01CA                 290                     Ko50:
+01CA B4330B          291                     CJNE    A, #033H, Ko100
+01CD 752064          292                                     Mov DelayServo, #100
+01D0 75994F          293                                     MOV     SBUF,   #"O"
+01D3 3099FD          294                                     HERE5: JNB TI, HERE5
+01D6 C299            295                                     CLR TI
+01D8                 296                     Ko100:
+01D8 B4340B          297                     CJNE    A, #034H, Ko150
+01DB 752096          298                                     Mov DelayServo, #150
+01DE 75994F          299                                     MOV     SBUF,   #"O"
+01E1 3099FD          300                                     HERE6: JNB TI, HERE6
+01E4 C299            301                                     CLR TI
+01E6                 302                     Ko150:
+01E6 32              303     RETI
+                     304     ;====================================================================
+                     305           END
+A51 MACRO ASSEMBLER  FISH_FEEDING_EQUIPMENT                                               07/17/2019 17:06:00 PAGE     6
+
+SYMBOL TABLE LISTING
+------ ----- -------
+
+
+N A M E             T Y P E  V A L U E   ATTRIBUTES
+
+AGAIN. . . . . . .  C ADDR   009FH   A   
+B. . . . . . . . .  D ADDR   00F0H   A   
+CHUCUART . . . . .  N NUMB   0015H   A   
+DELAY0 . . . . . .  C ADDR   0110H   A   
+DELAY45. . . . . .  C ADDR   0100H   A   
+DELAYBT. . . . . .  C ADDR   0088H   A   
+DELAYBT1 . . . . .  N NUMB   0021H   A   
+DELAYBT2 . . . . .  N NUMB   0022H   A   
+DELAYHT. . . . . .  C ADDR   0081H   A   
+DELAYHTHI. . . . .  N NUMB   0023H   A   
+DELAYSERVO . . . .  N NUMB   0020H   A   
+DELAYSV. . . . . .  C ADDR   0095H   A   
+DELAYSVV . . . . .  C ADDR   0097H   A   
+DONVIUART. . . . .  N NUMB   0016H   A   
+DU7LED . . . . . .  N NUMB   0013H   A   
+DUUART . . . . . .  N NUMB   0017H   A   
+ET0. . . . . . . .  B ADDR   00A8H.1 A   
+HERE2. . . . . . .  C ADDR   01ACH   A   
+HERE3. . . . . . .  C ADDR   01B7H   A   
+HERE4. . . . . . .  C ADDR   01C5H   A   
+HERE5. . . . . . .  C ADDR   01D3H   A   
+HERE6. . . . . . .  C ADDR   01E1H   A   
+HIENTHI. . . . . .  C ADDR   00B6H   A   
+IE . . . . . . . .  D ADDR   00A8H   A   
+IP . . . . . . . .  D ADDR   00B8H   A   
+ISRINT0. . . . . .  C ADDR   016FH   A   
+ISRINT1. . . . . .  C ADDR   0180H   A   
+ISRTIMER0. . . . .  C ADDR   0191H   A   
+ISRUART. . . . . .  C ADDR   019FH   A   
+KO100. . . . . . .  C ADDR   01D8H   A   
+KO150. . . . . . .  C ADDR   01E6H   A   
+KO50 . . . . . . .  C ADDR   01CAH   A   
+KONDO. . . . . . .  C ADDR   01BCH   A   
+LOOP . . . . . . .  C ADDR   006AH   A   
+LOOP1. . . . . . .  C ADDR   0128H   A   
+LOOPDELAY. . . . .  C ADDR   0084H   A   
+LOOPDELAYBT. . . .  C ADDR   008BH   A   
+LUU. . . . . . . .  C ADDR   00ABH   A   
+MIN. . . . . . . .  N NUMB   0011H   A   
+MOVE0. . . . . . .  C ADDR   00F1H   A   
+MOVE00 . . . . . .  C ADDR   00F3H   A   
+MOVE45 . . . . . .  C ADDR   00E2H   A   
+MOVE455. . . . . .  C ADDR   00E4H   A   
+NGUYEN7LED . . . .  N NUMB   0012H   A   
+P0 . . . . . . . .  D ADDR   0080H   A   
+P1 . . . . . . . .  D ADDR   0090H   A   
+P2 . . . . . . . .  D ADDR   00A0H   A   
+P3 . . . . . . . .  D ADDR   00B0H   A   
+READADC. . . . . .  C ADDR   0120H   A   
+RI . . . . . . . .  B ADDR   0098H.0 A   
+SAVE . . . . . . .  N NUMB   0019H   A   
+SBUF . . . . . . .  D ADDR   0099H   A   
+SCON . . . . . . .  D ADDR   0098H   A   
+SE . . . . . . . .  C ADDR   006EH   A   
+SE1. . . . . . . .  C ADDR   017FH   A   
+SE2. . . . . . . .  C ADDR   0190H   A   
+SEC. . . . . . . .    REG    R5          
+SERVO_2C . . . . .  C ADDR   00CBH   A   
+SERVO_OUT. . . . .  B ADDR   00B0H.7 A   
+START. . . . . . .  C ADDR   0030H   A   
+A51 MACRO ASSEMBLER  FISH_FEEDING_EQUIPMENT                                               07/17/2019 17:06:00 PAGE     7
+
+TF0. . . . . . . .  B ADDR   0088H.5 A   
+TH0. . . . . . . .  D ADDR   008CH   A   
+TH1. . . . . . . .  D ADDR   008DH   A   
+TI . . . . . . . .  B ADDR   0098H.1 A   
+TI0. . . . . . . .    REG    R6          
+TIM0 . . . . . . .  C ADDR   006EH   A   
+TL0. . . . . . . .  D ADDR   008AH   A   
+TMOD . . . . . . .  D ADDR   0089H   A   
+TR0. . . . . . . .  B ADDR   0088H.4 A   
+TR1. . . . . . . .  B ADDR   0088H.6 A   
+TRAMUART . . . . .  N NUMB   0014H   A   
+
+
+REGISTER BANK(S) USED: 0 
+
+
+ASSEMBLY COMPLETE.  0 WARNING(S), 0 ERROR(S)
